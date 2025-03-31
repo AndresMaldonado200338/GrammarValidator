@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Grammar Validator</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" />
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,97 +15,135 @@
 </head>
 
 <body>
-    <div class="container mt-5">
-        <h1 class="text-center">Validación de Gramáticas</h1>
-        <form id="grammarForm">
-            <!-- Reglas de Producción (P) -->
-            <div class="mb-3">
-                <label for="P" class="form-label">Reglas de Producción (P)</label>
-                <div id="productions">
-                    <div class="production-group">
-                        <input type="text" class="form-control mb-2" placeholder="Ej: S -> AB | B">
-                        <span class="error-message text-danger"></span>
+    <div class="container my-4">
+        <h1 class="text-center text-primary fw-bold mb-4">Grammar Validator</h1>
+
+        <!-- Sección Axioma Inicial -->
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h5 class="card-title"><i class="bi bi-pen-fill me-2"></i>Initial Axiom (S)</h5>
+            </div>
+            <div class="card-body">
+                <label for="initialAxiomInput" class="form-label visually-hidden">Axioma inicial</label>
+                <input type="text" id="initialAxiomInput" class="form-control" placeholder="Ej: S (Debe ser mayúscula)"
+                    pattern="[A-Z]" title="Solo mayúsculas (A-Z)" required />
+                <div class="invalid-feedback">Ingrese un símbolo válido (A-Z)</div>
+            </div>
+        </div>
+
+        <!-- Sección Reglas de Producción -->
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h5 class="card-title"><i class="bi bi-ui-checks me-2"></i>Production Rules (P)</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="ProdRulesTable">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Non-terminal (A-Z)</th>
+                                <th width="50px"><i class="bi bi-arrow-right"></i></th>
+                                <th>Production / ε</th>
+                                <th width="120px">Options</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <input type="text" id="NonTermInput" class="form-control" placeholder="Ej: A"
+                                        pattern="[A-Z]" title="Solo mayúsculas" />
+                                </td>
+                                <td class="text-center"><i class="bi bi-arrow-right"></i></td>
+                                <td>
+                                    <input type="text" id="ProdRuleInput" class="form-control"
+                                        placeholder="Ej: aB | b | ε" />
+                                </td>
+                                <td class="text-center">
+                                    <button type="button" id="AddRuleBtn" class="btn btn-success btn-sm"
+                                        data-bs-toggle="tooltip" title="Add rule">
+                                        <i class="bi bi-plus"></i>
+                                    </button>
+                                    <button type="button" id="DelRuleBtn" class="btn btn-danger btn-sm ms-2"
+                                        data-bs-toggle="tooltip" title="Delete last rule">
+                                        <i class="bi bi-trash-fill"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="d-flex flex-wrap gap-2 mt-3 btn-group-responsive">
+                    <button type="button" id="UploadProdBtn" class="btn btn-outline-primary">
+                        <i class="bi bi-file-earmark-arrow-up-fill me-2"></i>Upload file
+                    </button>
+                    <button type="button" id="SaveProdBtn" class="btn btn-outline-primary">
+                        <i class="bi bi-floppy-fill me-2"></i>Save to file
+                    </button>
+                    <input type="file" id="ProdFileInputAccept" accept=".json" class="d-none" />
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección cadena ingresada-->
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h5 class="card-title"><i class="bi bi-text-paragraph me-2"></i>String to Validate</h5>
+            </div>
+            <div class="card-body">
+                <label for="inputString" class="form-label visually-hidden">Cadena</label>
+                <input type="text" id="inputString" class="form-control" placeholder="Ej: aababb" required />
+                <div class="invalid-feedback">Ingrese una cadena válida</div>
+            </div>
+        </div>
+
+        <!-- Sección para botones -->
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex flex-wrap gap-2 btn-group-responsive">
+                    <button type="button" id="ShowGrammarBtn" class="btn btn-primary">
+                        <i class="bi bi-eye-fill me-2"></i>Show Grammar
+                    </button>
+                    <button type="button" id="EvaluateStringBtn" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-2"></i>Evaluate String
+                    </button>
+                    <button type="button" id="ClearAllBtn" class="btn btn-danger">
+                        <i class="bi bi-x-circle-fill me-2"></i>Clear All
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección para resultados -->
+        <div id="resultsCard" class="card shadow-sm d-none">
+            <div class="card-header">
+                <h5 class="card-title"><i class="bi bi-list-ul me-2"></i>Results</h5>
+            </div>
+            <div class="card-body">
+                <div id="loadingSpinner" class="text-center mb-3 d-none">
+                    <div class="spinner-border text-primary"></div>
+                    <p class="mt-2">Processing...</p>
+                </div>
+                <div id="grammarTypeResult" class="mb-3"></div>
+                <div id="stringResult" class="alert mb-3 d-none"></div>
+                <div id="derivationsResult" class="d-none">
+                    <h6><i class="bi bi-diagram-3 me-2"></i>Derivations:</h6>
+                    <div class="bg-light p-3 rounded">
+                        <div id="derivationsText" class="derivation-steps"></div>
                     </div>
                 </div>
-                <button type="button" class="btn btn-secondary" onclick="addProduction()">+</button>
             </div>
-
-            <button type="submit" class="btn btn-primary">Validar Gramática</button>
-        </form>
-
-        <div id="result" class="mt-4"></div>
+        </div>
     </div>
 
-    <script>
-        // Agregar más campos para reglas de producción
-        function addProduction() {
-            const div = document.createElement('div');
-            div.classList.add('production-group');
-            div.innerHTML = `
-                <input type="text" class="form-control mb-2" placeholder="Ej: A -> aB | b">
-                <span class="error-message text-danger"></span>
-            `;
-            document.getElementById('productions').appendChild(div);
-        }
-
-        // Validar el formulario antes de enviar
-        function validateForm() {
-            let isValid = true;
-
-            document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
-
-            const productionInputs = document.querySelectorAll('#productions input');
-            const productionRegex = /^[A-Z]\s*->\s*[a-zA-Z]+(\s*\|\s*[a-zA-Z]+)*$/; // Formato: "A -> aB | b"
-
-            productionInputs.forEach(input => {
-                const rule = input.value.trim();
-                const errorElement = input.nextElementSibling;
-
-                if (!rule) {
-                    errorElement.textContent = 'Este campo no puede estar vacío.';
-                    isValid = false;
-                } else if (!productionRegex.test(rule)) {
-                    errorElement.textContent = `Regla no válida. Use el formato "A -> aB | b".`;
-                    isValid = false;
-                } else {
-                    errorElement.textContent = '';
-                }
-            });
-
-            return isValid;
-        }
-
-        // Envío del formulario
-        document.getElementById('grammarForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        if (!validateForm()) return;
-
-        const P = Array.from(document.querySelectorAll('#productions input')).map(input => input.value.trim());
-
-        try {
-            const response = await fetch('/validate_grammar', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ P })
-            });
-            const result = await response.json();
-
-            document.getElementById('result').innerHTML = `
-                <p><strong>Resultados:</strong></p>
-                <p><strong>No terminales N:</strong> {${[...result.no_terminales].join(', ')}}</p>
-                <p><strong>Terminales T:</strong> {${[...result.terminales].join(', ')}}</p>
-                <p><strong>Axioma inicial S:</strong> ${result.axioma}</p>
-                <p><strong>La gramática</strong> ${result.tipo}</p>
-            `;
-        } catch (error) {
-            document.getElementById('result').innerHTML = `<p class="text-danger">Error al validar la gramática.</p>`;
-        }
-    });
-
-    </script>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    </script>
+    <script src="{{ url_for('static', filename='script.js') }}" defer></script>
+
 </body>
 
 </html>

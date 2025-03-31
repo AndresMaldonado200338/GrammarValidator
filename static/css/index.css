@@ -1,16 +1,11 @@
 body {
     font-family: 'Montserrat', sans-serif;
-    font-weight: 400;
-}
-
-.error-message {
-    color: red;
-    font-size: 0.9em;
-    margin-top: 5px;
+    background-color: #f4f7f6;
+    color: #333;
 }
 
 .container {
-    max-width: 600px;
+    max-width: 900px;
     margin: auto;
     background: white;
     padding: 20px;
@@ -18,6 +13,108 @@ body {
     box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
 }
 
-button:hover {
-    background: #0056b3;
+.card {
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    margin-bottom: 30px;
+}
+
+.card-header {
+    background-color: #007bff;
+    color: white;
+}
+
+.card-title {
+    font-size: 1.25rem;
+    font-weight: bold;
+}
+
+.btn-primary,
+.btn-outline-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.btn-outline-primary:hover {
+    background-color: #0056b3;
+    color: white;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+}
+
+.table thead {
+    background-color: #f1f3f5;
+}
+
+.table th,
+.table td {
+    text-align: center;
+    padding: 10px;
+}
+
+.table-responsive {
+    margin-top: 20px;
+}
+
+.form-control {
+    border-radius: 10px;
+}
+
+.btn-group-responsive button {
+    flex: 1;
+}
+
+.btn-outline-primary {
+    color: white;
+    border-color: #007bff;
+}
+
+.btn-outline-primary:hover {
+    background-color: #0056b3;
+    color: white;
+}
+
+.derivation-steps {
+    font-family: 'Courier New', monospace !important;
+    font-size: 1.1rem !important;
+    line-height: 1.8 !important;
+    white-space: pre-wrap !important;
+}
+
+.derivation-steps {
+    font-family: 'Courier New', monospace;
+    font-size: 1.1rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+.derivation-steps strong {
+    color: #d63384;
+    font-weight: bold;
+}
+
+.production-arrow {
+    color: #6c757d;
+    margin: 0 5px;
+}
+
+@media (max-width: 768px) {
+
+    .table th,
+    .table td {
+        font-size: 0.9rem;
+    }
+
+    .card-header {
+        font-size: 1.1rem;
+    }
 }
