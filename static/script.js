@@ -68,6 +68,7 @@ document.addEventListener('DOMContentLoaded', function () {
         prodRuleInput.type = 'text';
         prodRuleInput.className = 'form-control';
         prodRuleInput.placeholder = 'Ej: aB | b | ε';
+        prodRuleInput.title = 'Reglas de producción'
         prodRuleInput.addEventListener('input', () => validateProductionRule(prodRuleInput));
         prodRuleCell.appendChild(prodRuleInput);
 
@@ -76,9 +77,11 @@ document.addEventListener('DOMContentLoaded', function () {
         addBtn.className = 'btn btn-success btn-sm';
         addBtn.innerHTML = '<i class="bi bi-plus"></i>';
         addBtn.title = 'Add rule';
+        const addBtnTolltip = new bootstrap.Tooltip(addBtn);
         addBtn.addEventListener('click', function() {
             if (productionRulesTable.rows.length < 10) {
                 addNewProductionRule();
+                addBtnTolltip.dispose();
             } else {
                 alert('Maximum of 10 production rules reached');
             }
@@ -88,10 +91,12 @@ document.addEventListener('DOMContentLoaded', function () {
         delBtn.className = 'btn btn-danger btn-sm ms-2';
         delBtn.innerHTML = '<i class="bi bi-trash-fill"></i>';
         delBtn.title = 'Delete rule';
+        const delBtnTooltip = new bootstrap.Tooltip(delBtn);
         delBtn.addEventListener('click', function() {
             if (productionRulesTable.rows.length > 1) { // No eliminar la última fila
                 productionRulesTable.deleteRow(newRow.rowIndex - 1);
                 updateGrammarData();
+                delBtnTooltip.dispose();
             }
         });
 
@@ -269,7 +274,7 @@ ${grammarData.productions.map(p => `    ${p.lhs} → ${p.rhs.length ? p.rhs.join
         if (formattedDerivations) {
             // Convertir *A* a <strong>A</strong> y → a símbolos de flecha
             formattedDerivations = formattedDerivations
-                .replace(/\* ([A-Z]) \*/g, '<strong>$1</strong>')
+                .replace(/\*([A-Z])\*/g, '<strong>$1</strong>')
                 .replace(/→/g, '→');
         }
 
@@ -323,6 +328,8 @@ ${grammarData.productions.map(p => `    ${p.lhs} → ${p.rhs.length ? p.rhs.join
     }
 
     function clearAll() {
+        initialAxiomInput.value = '';
+
         while (productionRulesTable.rows.length > 1) {
             productionRulesTable.deleteRow(1);
         }
@@ -330,6 +337,8 @@ ${grammarData.productions.map(p => `    ${p.lhs} → ${p.rhs.length ? p.rhs.join
         const firstRow = productionRulesTable.rows[0];
         firstRow.cells[0].querySelector('input').value = '';
         firstRow.cells[2].querySelector('input').value = '';
+
+        inputString.value = '';
 
         resultsCard.classList.add('d-none');
         grammarData = {
@@ -360,15 +369,42 @@ ${grammarData.productions.map(p => `    ${p.lhs} → ${p.rhs.length ? p.rhs.join
     });
 
     // Botones para resultados
-    showGrammarButton.addEventListener('click', showGrammar);
-    evaluateStringButton.addEventListener('click', evaluateString);
-    clearAllButton.addEventListener('click', clearAll);
+    showGrammarButton.addEventListener('click', function () {
+        const tooltip = bootstrap.Tooltip.getInstance(showGrammarButton);
+        if (tooltip) tooltip.dispose();
+    
+        showGrammar();
+    });
+
+    evaluateStringButton.addEventListener('click', function () {
+        const tooltip = bootstrap.Tooltip.getInstance(evaluateStringButton);
+        if (tooltip) tooltip.dispose();
+    
+        evaluateString();
+    });
+    
+    clearAllButton.addEventListener('click', function () {
+        const tooltip = bootstrap.Tooltip.getInstance(clearAllButton);
+        if (tooltip) tooltip.dispose();
+    
+        clearAll();
+    });
 
     // Manejo de archivos
-    saveProductionButton.addEventListener('click', saveGrammarToFile);
+    saveProductionButton.addEventListener('click', function () {
+        const tooltip = bootstrap.Tooltip.getInstance(saveProductionButton);
+        if (tooltip) tooltip.dispose();
+    
+        saveGrammarToFile();
+    });
+
     uploadProductionButton.addEventListener('click', function () {
+        const tooltip = bootstrap.Tooltip.getInstance(uploadProductionButton);
+        if (tooltip) tooltip.dispose();
+    
         productionFileInput.click();
     });
+    
     productionFileInput.addEventListener('change', loadGrammarFromFile);
 
     initializeTable();

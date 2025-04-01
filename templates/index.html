@@ -64,7 +64,7 @@
                                         <i class="bi bi-plus"></i>
                                     </button>
                                     <button type="button" id="DelRuleBtn" class="btn btn-danger btn-sm ms-2"
-                                        data-bs-toggle="tooltip" title="Delete last rule">
+                                        data-bs-toggle="tooltip" title="Delete rule">
                                         <i class="bi bi-trash-fill"></i>
                                     </button>
                                 </td>
@@ -73,10 +73,12 @@
                     </table>
                 </div>
                 <div class="d-flex flex-wrap gap-2 mt-3 btn-group-responsive">
-                    <button type="button" id="UploadProdBtn" class="btn btn-outline-primary">
+                    <button type="button" id="UploadProdBtn" class="btn btn-outline-primary"
+                        data-bs-toggle="tooltip" title="Upload file">
                         <i class="bi bi-file-earmark-arrow-up-fill me-2"></i>Upload file
                     </button>
-                    <button type="button" id="SaveProdBtn" class="btn btn-outline-primary">
+                    <button type="button" id="SaveProdBtn" class="btn btn-outline-primary"
+                        data-bs-toggle="tooltip" title="Save to file">
                         <i class="bi bi-floppy-fill me-2"></i>Save to file
                     </button>
                     <input type="file" id="ProdFileInputAccept" accept=".json" class="d-none" />
@@ -100,13 +102,16 @@
         <div class="card shadow-sm">
             <div class="card-body">
                 <div class="d-flex flex-wrap gap-2 btn-group-responsive">
-                    <button type="button" id="ShowGrammarBtn" class="btn btn-primary">
+                    <button type="button" id="ShowGrammarBtn" class="btn btn-primary"
+                        data-bs-toggle="tooltip" title="Show grammar">
                         <i class="bi bi-eye-fill me-2"></i>Show Grammar
                     </button>
-                    <button type="button" id="EvaluateStringBtn" class="btn btn-primary">
+                    <button type="button" id="EvaluateStringBtn" class="btn btn-primary"
+                        data-bs-toggle="tooltip" title="Evaluate string">
                         <i class="bi bi-check-lg me-2"></i>Evaluate String
                     </button>
-                    <button type="button" id="ClearAllBtn" class="btn btn-danger">
+                    <button type="button" id="ClearAllBtn" class="btn btn-danger"
+                        data-bs-toggle="tooltip" title="Clear all fields">
                         <i class="bi bi-x-circle-fill me-2"></i>Clear All
                     </button>
                 </div>

@@ -1,5 +1,4 @@
 import logging
-import sys
 from flask import Blueprint, request, jsonify, render_template
 from app.services.parser import parse_grammar
 from app.services.evaluator import evaluate_grammar
@@ -45,25 +44,25 @@ def evaluate_grammar_route():
         logging.info(f"Terminales: {terminals}")
         logging.info(f"Axioma inicial: {initial_axiom}")
         logging.info(f"Producciones: {productions}")
-        
+
         # Evaluar tipo de gramática
         grammar_type = evaluate_grammar(productions)
         
-        # Configurar límite de recursión
-        original_recursion_limit = sys.getrecursionlimit()
-        sys.setrecursionlimit(2000)  # Aumentar temporalmente
-        
         # Evaluar cadena
         evaluator = StringEvaluator(productions, initial_axiom)
-        belongs = evaluator.belongs_to_grammar(input_string)
+        belongs, derivations = evaluator.belongs_to_grammar(input_string)
         
-        # Restaurar límite
-        sys.setrecursionlimit(original_recursion_limit) 
+        # Formatear derivaciones con flechas si existen
+        formatted_derivations = None
+        if derivations:
+            formatted_derivations = " → ".join(derivations)
+
+        logging.info(f"derivaciones: {derivations}")
         
         return jsonify({
             'grammar_type': grammar_type,
             'belongs_to_grammar': belongs,
-            'derivation': ' '.join(evaluator.derivation_history) if belongs else None,
+            'derivation': formatted_derivations,
             'message': f'Gramática {grammar_type}. Cadena: {"aceptada" if belongs else "rechazada"}'
         })
 
