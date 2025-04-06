@@ -298,20 +298,51 @@ ${grammarData.productions.map(p => `    ${p.lhs} → ${p.rhs.length ? p.rhs.join
         resultsCard.classList.remove('d-none');
     }
 
-    // ==================== FUNCIONES DE ARCHIVOS ====================
+    // ==================== FUNCIONES DE ARCHIVOS ==========================
+
+    // ===================== Function to save grammar to file ====================
     function saveGrammarToFile() {
         updateGrammarData();
-
-        if (!grammarData.initialAxiom || grammarData.productions.length === 0) {
-            showError('No grammar to save');
+    
+        if (!initialAxiomInput.value.trim()) {
+            showError('Initial axiom is required');
             return;
         }
-
+    
+        const groupedProductions = {};
+    
+        for (const row of productionRulesTable.rows) {
+            if (row.rowIndex === 0) continue
+    
+            const lhs = row.cells[0].querySelector('input').value.trim();
+            const rhsInput = row.cells[2].querySelector('input').value.trim();
+    
+            if (!lhs || !rhsInput) continue;
+    
+            const rhsVariants = rhsInput.split('|').map(variant => variant.trim());
+    
+            for (const variant of rhsVariants) {
+                const rhsArray = variant.split(''); 
+                if (!groupedProductions[lhs]) {
+                    groupedProductions[lhs] = [];
+                }
+                groupedProductions[lhs].push(rhsArray);
+            }
+        }
+    
+        const productions = [];
+        for (const lhs in groupedProductions) {
+            for (const rhs of groupedProductions[lhs]) {
+                productions.push({ lhs, rhs });
+            }
+        }
+    
         const grammarJson = {
-            initialAxiom: grammarData.initialAxiom,
-            productions: grammarData.productions
+            initialAxiom: initialAxiomInput.value.trim(),
+            productions,
+            inputString: document.getElementById('inputString').value.trim()
         };
-
+    
         const blob = new Blob([JSON.stringify(grammarJson, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -322,11 +353,49 @@ ${grammarData.productions.map(p => `    ${p.lhs} → ${p.rhs.length ? p.rhs.join
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
     }
-
+    
+    // ===================== Function to load grammar from file ====================
     function loadGrammarFromFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+    
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            try {
+                const grammarJson = JSON.parse(e.target.result);
+                initialAxiomInput.value = grammarJson.initialAxiom || '';
+    
+                while (productionRulesTable.rows.length > 0) {
+                    productionRulesTable.deleteRow(0);
+                }
+                const groupedProductions = {};
+                for (const production of grammarJson.productions) {
+                    const lhs = production.lhs;
+                    const rhs = production.rhs.join('');
+                    if (!groupedProductions[lhs]) {
+                        groupedProductions[lhs] = [];
+                    }
+                    groupedProductions[lhs].push(rhs);
+                }
 
+                for (const lhs in groupedProductions) {
+                    addNewProductionRule();
+                    const lastRow = productionRulesTable.rows[productionRulesTable.rows.length - 1];
+                    lastRow.cells[0].querySelector('input').value = lhs;
+                    lastRow.cells[2].querySelector('input').value = groupedProductions[lhs].join(' | ');
+                }
+
+                document.getElementById('inputString').value = grammarJson.inputString || '';
+    
+            } catch (error) {
+                showError('Error loading grammar from file: ' + error.message);
+            }
+        };
+    
+        reader.readAsText(file);
     }
-
+    
+    // ==================== FUNCIONES DE LIMPIEZA ====================
     function clearAll() {
         initialAxiomInput.value = '';
 
@@ -340,7 +409,13 @@ ${grammarData.productions.map(p => `    ${p.lhs} → ${p.rhs.length ? p.rhs.join
 
         inputString.value = '';
 
+        productionFileInput.value = '';
+
         resultsCard.classList.add('d-none');
+        grammarTypeResult.innerHTML = '';
+        derivationsText.innerHTML = '';
+        derivationsResult.classList.add('d-none');
+        stringResult.classList.add('d-none');
         grammarData = {
             initialAxiom: '',
             nonTerminals: new Set(),
