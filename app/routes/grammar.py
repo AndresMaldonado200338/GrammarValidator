@@ -100,3 +100,38 @@ def check_grammar_type_route():
     except Exception as e:
         logging.error(f"Error: {str(e)}", exc_info=True)
         return jsonify({"error": str(e)}), 400
+    
+@grammar_bp.route("/generate-strings", methods=["POST"])
+def generate_strings():
+    """Endpoint para generar cadenas válidas de longitud X"""
+    try:
+        data = request.get_json()
+        
+        if not data or "grammar_text" not in data or "length" not in data:
+            return jsonify({"error": "Se requieren grammar_text y length"}), 400
+        
+        length = int(data["length"])
+        if not 1 <= length <= 10:
+            return jsonify({"error": "La longitud debe estar entre 1 y 10"}), 400
+
+        # Parsear gramática
+        _, _, initial_axiom, productions = parse_grammar(data["grammar_text"])
+        
+        # Generar cadenas
+        evaluator = StringEvaluator(productions, initial_axiom)
+        generated_strings = evaluator.generate_strings(length)
+
+        # Imprimir datos que llegaron
+        logging.info(f"longitud: {length}")
+        logging.info(f"gramatica: {data['grammar_text']}")
+        logging.info(f"cadenas generadas: {generated_strings}")
+        
+        return jsonify({
+            'generated_strings': generated_strings,
+            'count': len(generated_strings),
+            'note': 'Showing first 50 results' if len(generated_strings) == 50 else ''
+        })
+
+    except Exception as e:
+        logging.error(f'Error: {str(e)}', exc_info=True)
+        return jsonify({'error': str(e)}), 400
