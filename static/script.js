@@ -7,12 +7,15 @@ document.addEventListener('DOMContentLoaded', function () {
     const clearAllButton = document.getElementById('ClearAllBtn');
     const uploadProductionButton = document.getElementById('UploadProdBtn');
     const saveProductionButton = document.getElementById('SaveProdBtn');
+    const generateStringsButton = document.getElementById('GenerateStringsBtn');
     const productionFileInput = document.getElementById('ProdFileInputAccept');
     const resultsCard = document.getElementById('resultsCard');
     const grammarTypeResult = document.getElementById('grammarTypeResult');
     const stringResult = document.getElementById('stringResult');
     const derivationsResult = document.getElementById('derivationsResult');
     const derivationsText = document.getElementById('derivationsText');
+    const lengthInput = document.getElementById('lengthInput');
+    const generatedStringsResult = document.getElementById('generatedStringsResult');
     const loadingSpinner = document.getElementById('loadingSpinner');
 
     // Variables de estado
@@ -78,7 +81,7 @@ document.addEventListener('DOMContentLoaded', function () {
         addBtn.innerHTML = '<i class="bi bi-plus"></i>';
         addBtn.title = 'Add rule';
         const addBtnTolltip = new bootstrap.Tooltip(addBtn);
-        addBtn.addEventListener('click', function() {
+        addBtn.addEventListener('click', function () {
             if (productionRulesTable.rows.length < 10) {
                 addNewProductionRule();
                 addBtnTolltip.dispose();
@@ -92,7 +95,7 @@ document.addEventListener('DOMContentLoaded', function () {
         delBtn.innerHTML = '<i class="bi bi-trash-fill"></i>';
         delBtn.title = 'Delete rule';
         const delBtnTooltip = new bootstrap.Tooltip(delBtn);
-        delBtn.addEventListener('click', function() {
+        delBtn.addEventListener('click', function () {
             if (productionRulesTable.rows.length > 1) { // No eliminar la última fila
                 productionRulesTable.deleteRow(newRow.rowIndex - 1);
                 updateGrammarData();
@@ -129,7 +132,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             const alternatives = prodRuleValue.split('|').map(alt => alt.trim());
-            
+
             if (alternatives.length === 0) alternatives.push('');
 
             for (const alt of alternatives) {
@@ -142,7 +145,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 } else {
                     // Procesar la producción normal
                     const symbols = alt.split(/(?=[A-Z])|\B/).filter(c => c !== '' && c !== 'ε');
-            
+
                     // Si no hay símbolos después de filtrar, es una producción vacía (ε)
                     if (symbols.length === 0) {
                         grammarData.productions.push({
@@ -155,7 +158,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             lhs: nonTermValue,
                             rhs: symbols
                         });
-            
+
                         // Verificar si es terminal o variable
                         symbols.forEach(symbol => {
                             if (/^[a-z0-9]$/.test(symbol)) {
@@ -238,7 +241,7 @@ ${grammarData.productions.map(p => `    ${p.lhs} → ${p.rhs.length ? p.rhs.join
                     input_string: inputString
                 })
             });
-            
+
             console.log(
                 'Grammar:', formatGrammarForAPI(),
                 'Input String:', inputString,
@@ -293,6 +296,69 @@ ${grammarData.productions.map(p => `    ${p.lhs} → ${p.rhs.length ? p.rhs.join
         stringResult.classList.remove('d-none');
     }
 
+    async function generateStrings() {
+        const length = parseInt(lengthInput.value.trim());
+
+        if (isNaN(length) || length < 1 || length > 10) {
+            showError('Please enter a valid length (1-10)');
+            return;
+        }
+
+        updateGrammarData();
+
+        if (!grammarData.initialAxiom || grammarData.productions.length === 0) {
+            showError('Please define a valid grammar first');
+            return;
+        }
+
+        loadingSpinner.classList.remove('d-none');
+        resultsCard.classList.remove('d-none');
+
+        try {
+            const response = await fetch('/generate-strings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    grammar_text: formatGrammarForAPI(),
+                    length: length
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                showGeneratedStrings(data);
+            } else {
+                showError(data.error || 'Error generating strings');
+            }
+        } catch (error) {
+            showError('Network error: ' + error.message);
+        } finally {
+            loadingSpinner.classList.add('d-none');
+        }
+    }
+
+    function showGeneratedStrings(data) {
+        let message = `<strong>Generated ${data.count} strings</strong>`;
+
+        if (data.note) {
+            message += ` <span class="text-muted">(${data.note})</span>`;
+        }
+
+        // Limitar visualización a 50 elementos
+        const stringsToShow = data.generated_strings.slice(0, 50);
+
+        generatedStringsResult.innerHTML = `
+            <div class="alert alert-success">
+                ${message}
+                <div class="mt-2 strings-container">
+                    ${stringsToShow.map(s => `<span class="badge bg-secondary me-1 mb-1">${s}</span>`).join('')}
+                </div>
+            </div>
+        `;
+        generatedStringsResult.classList.remove('d-none');
+    }
+
     function showError(message) {
         grammarTypeResult.innerHTML = `<div class="alert alert-danger">${message}</div>`;
         resultsCard.classList.remove('d-none');
@@ -303,46 +369,46 @@ ${grammarData.productions.map(p => `    ${p.lhs} → ${p.rhs.length ? p.rhs.join
     // ===================== Function to save grammar to file ====================
     function saveGrammarToFile() {
         updateGrammarData();
-    
+
         if (!initialAxiomInput.value.trim()) {
             showError('Initial axiom is required');
             return;
         }
-    
+
         const groupedProductions = {};
-    
+
         for (const row of productionRulesTable.rows) {
             if (row.rowIndex === 0) continue
-    
+
             const lhs = row.cells[0].querySelector('input').value.trim();
             const rhsInput = row.cells[2].querySelector('input').value.trim();
-    
+
             if (!lhs || !rhsInput) continue;
-    
+
             const rhsVariants = rhsInput.split('|').map(variant => variant.trim());
-    
+
             for (const variant of rhsVariants) {
-                const rhsArray = variant.split(''); 
+                const rhsArray = variant.split('');
                 if (!groupedProductions[lhs]) {
                     groupedProductions[lhs] = [];
                 }
                 groupedProductions[lhs].push(rhsArray);
             }
         }
-    
+
         const productions = [];
         for (const lhs in groupedProductions) {
             for (const rhs of groupedProductions[lhs]) {
                 productions.push({ lhs, rhs });
             }
         }
-    
+
         const grammarJson = {
             initialAxiom: initialAxiomInput.value.trim(),
             productions,
             inputString: document.getElementById('inputString').value.trim()
         };
-    
+
         const blob = new Blob([JSON.stringify(grammarJson, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -353,18 +419,18 @@ ${grammarData.productions.map(p => `    ${p.lhs} → ${p.rhs.length ? p.rhs.join
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
     }
-    
+
     // ===================== Function to load grammar from file ====================
     function loadGrammarFromFile(event) {
         const file = event.target.files[0];
         if (!file) return;
-    
+
         const reader = new FileReader();
         reader.onload = function (e) {
             try {
                 const grammarJson = JSON.parse(e.target.result);
                 initialAxiomInput.value = grammarJson.initialAxiom || '';
-    
+
                 while (productionRulesTable.rows.length > 0) {
                     productionRulesTable.deleteRow(0);
                 }
@@ -386,15 +452,15 @@ ${grammarData.productions.map(p => `    ${p.lhs} → ${p.rhs.length ? p.rhs.join
                 }
 
                 document.getElementById('inputString').value = grammarJson.inputString || '';
-    
+
             } catch (error) {
                 showError('Error loading grammar from file: ' + error.message);
             }
         };
-    
+
         reader.readAsText(file);
     }
-    
+
     // ==================== FUNCIONES DE LIMPIEZA ====================
     function clearAll() {
         initialAxiomInput.value = '';
@@ -416,6 +482,9 @@ ${grammarData.productions.map(p => `    ${p.lhs} → ${p.rhs.length ? p.rhs.join
         derivationsText.innerHTML = '';
         derivationsResult.classList.add('d-none');
         stringResult.classList.add('d-none');
+        lengthInput.value = '';
+        generatedStringsResult.classList.add('d-none');
+
         grammarData = {
             initialAxiom: '',
             nonTerminals: new Set(),
@@ -428,8 +497,8 @@ ${grammarData.productions.map(p => `    ${p.lhs} → ${p.rhs.length ? p.rhs.join
     initialAxiomInput.addEventListener('input', () => validateInitialAxiom(initialAxiomInput));
 
     inputString.addEventListener('input', () => validateInputString(inputString));
-        
-    document.getElementById('AddRuleBtn').addEventListener('click', function() {
+
+    document.getElementById('AddRuleBtn').addEventListener('click', function () {
         if (productionRulesTable.rows.length < 10) {
             addNewProductionRule();
         } else {
@@ -437,7 +506,7 @@ ${grammarData.productions.map(p => `    ${p.lhs} → ${p.rhs.length ? p.rhs.join
         }
     });
 
-    document.getElementById('DelRuleBtn').addEventListener('click', function() {
+    document.getElementById('DelRuleBtn').addEventListener('click', function () {
         if (productionRulesTable.rows.length > 1) {
             productionRulesTable.deleteRow(productionRulesTable.rows.length - 1);
         }
@@ -447,39 +516,46 @@ ${grammarData.productions.map(p => `    ${p.lhs} → ${p.rhs.length ? p.rhs.join
     showGrammarButton.addEventListener('click', function () {
         const tooltip = bootstrap.Tooltip.getInstance(showGrammarButton);
         if (tooltip) tooltip.dispose();
-    
+
         showGrammar();
     });
 
     evaluateStringButton.addEventListener('click', function () {
         const tooltip = bootstrap.Tooltip.getInstance(evaluateStringButton);
         if (tooltip) tooltip.dispose();
-    
+
         evaluateString();
     });
-    
+
     clearAllButton.addEventListener('click', function () {
         const tooltip = bootstrap.Tooltip.getInstance(clearAllButton);
         if (tooltip) tooltip.dispose();
-    
+
         clearAll();
+    });
+
+    generateStringsButton.addEventListener('click', function () {
+        const tooltip = bootstrap.Tooltip.getInstance(generateStringsButton);
+        if (tooltip) tooltip.dispose();
+
+        generateStrings();
     });
 
     // Manejo de archivos
     saveProductionButton.addEventListener('click', function () {
         const tooltip = bootstrap.Tooltip.getInstance(saveProductionButton);
         if (tooltip) tooltip.dispose();
-    
+
         saveGrammarToFile();
     });
 
     uploadProductionButton.addEventListener('click', function () {
         const tooltip = bootstrap.Tooltip.getInstance(uploadProductionButton);
         if (tooltip) tooltip.dispose();
-    
+
         productionFileInput.click();
     });
-    
+
     productionFileInput.addEventListener('change', loadGrammarFromFile);
 
     initializeTable();
