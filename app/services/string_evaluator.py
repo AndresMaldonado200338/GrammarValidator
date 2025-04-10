@@ -92,62 +92,67 @@ class StringEvaluator:
     def _format_derivation(self, symbols: List[str]) -> str:
         """Formatea la derivación marcando no terminales con *"""
         return ''.join(f"*{s}*" if s in self.productions else s for s in symbols)
-
+    
     def generate_strings(self, length: int, max_results: int = 50) -> List[str]:
         """Genera cadenas válidas de longitud específica (max 50 por defecto)"""
         if not 1 <= length <= 10:
             raise ValueError("La longitud debe estar entre 1 y 10")
 
         memo = {}
-        
+    
         def generate_from(symbol: str, remaining_length: int) -> List[str]:
             # Verificar cache primero
             key = (symbol, remaining_length)
             if key in memo:
                 return memo[key]
-        
+    
             # Caso base para terminales
             if symbol not in self.productions:
                 return [symbol] if remaining_length == 1 else []
-        
+    
             results = []
             for production in self.productions[symbol]:
-                # Poda: si la producción es más larga que el espacio restante
-                if len(production) > remaining_length:
-                    continue
-                
-                # Caso especial para ε
+                # Caso especial para ε (producción vacía)
                 if not production:
                     if remaining_length == 0:
                         results.append("")
                     continue
             
+                # Calcular el espacio mínimo requerido por esta producción
+                min_required = sum(1 for sym in production if sym not in self.productions)
+            
+                # Si la producción requiere más símbolos de los disponibles, saltar
+                if min_required > remaining_length:
+                    continue
+            
                 # Generar recursivamente combinaciones
-                first, *rest = production
-                for l in range(1, remaining_length - len(rest) + 1):
-                    for prefix in generate_from(first, l):
-                        if rest:
-                            for suffix in generate_from_sequence(rest, remaining_length - l):
-                                results.append(prefix + suffix)
-                        else:
-                            results.append(prefix)
+                def generate_sequence(symbols: List[str], remaining: int) -> List[str]:
+                    if not symbols:
+                        return [""] if remaining == 0 else []
+                
+                    first, *rest = symbols
+                    seq_results = []
+                
+                    # Si el símbolo es terminal, debe consumir exactamente 1 de longitud
+                    if first not in self.productions:
+                        if remaining >= 1:
+                            for suffix in generate_sequence(rest, remaining - 1):
+                                seq_results.append(first + suffix)
+                    else:
+                        # Si es no terminal, probar todas las longitudes posibles
+                        for l in range(0, remaining - len(rest) + 1):
+                            for prefix in generate_from(first, l):
+                                for suffix in generate_sequence(rest, remaining - l):
+                                    seq_results.append(prefix + suffix)
+                
+                    return seq_results
+            
+                results.extend(generate_sequence(production, remaining_length))
         
             # Almacenar en cache y devolver
             memo[key] = results
             return results
-        
-        def generate_from_sequence(symbols: List[str], remaining_length: int) -> List[str]:
-            if not symbols:
-                return [""] if remaining_length == 0 else []
-        
-            first, *rest = symbols
-            results = []
-            for l in range(1, remaining_length - len(rest) + 1):
-                for prefix in generate_from(first, l):
-                    for suffix in generate_from_sequence(rest, remaining_length - l):
-                        results.append(prefix + suffix)
-            return results
 
-            # Generar resultados y limitar
+        # Generar resultados y limitar
         results = generate_from(self.start_symbol, length)
         return sorted(list(set(results)))[:max_results]
